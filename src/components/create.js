@@ -1,22 +1,49 @@
 import React, { useState } from "react";
-import { Container, Form, Button, Col } from "react-bootstrap";
+import { Container, Form, Button } from "react-bootstrap";
 import FormTitle from "./form/title";
 import FormField from "./form/field";
+import axios from "axios";
 
 function Create(props) {
   // this component further can be optimized, instead of multiple Form Rows, we can put all elements in an array/object
   // and loop through the array/object which further shortens this component to less than 30 lines
 
   const [validated, setValidated] = useState(false);
+  const [avatar, setAvatar] = useState("");
 
-  const handleSubmit = (event) => {
+  const imageUpload = (event) => {
+    setAvatar(event.target.files[0].name);
+  };
+
+  const handleSubmit = async (event) => {
     const form = event.target;
+    const formData = new FormData(form);
+
+    event.preventDefault();
+
     if (form.checkValidity() === false) {
-      event.preventDefault();
-      event.stopPropagation();
+      setValidated(true);
+    } else {
+      let requestData = {};
+      for (let [key, value] of formData.entries()) {
+        if (key !== "avatar") {
+          requestData[key] = value;
+        }
+      }
+
+      requestData.avatar = avatar;
+      let res = await axios.post(
+        "http://localhost:4000/referral/create",
+        requestData
+      );
+      if (res.data.success) {
+        alert("Created successfully!");
+      } else {
+        alert("Error : " + res.data.error);
+      }
     }
 
-    setValidated(true);
+    event.stopPropagation();
   };
 
   return (
@@ -29,6 +56,7 @@ function Create(props) {
         method="post"
         id="referral_form"
         onSubmit={handleSubmit}
+        encType="multipart/form-data"
       >
         <Form.Row>
           <FormField id="given_name" label="Given Name"></FormField>
@@ -48,7 +76,7 @@ function Create(props) {
         </Form.Row>
 
         <Form.Row>
-          <FormField id="suburn" label="Suburb"></FormField>
+          <FormField id="suburb" label="Suburb"></FormField>
           <FormField id="state" label="State"></FormField>
         </Form.Row>
 
@@ -63,6 +91,9 @@ function Create(props) {
               className="btn-light px-5 py-3"
               required
               accept="image/*"
+              id="avatar"
+              name="avatar"
+              onChange={imageUpload}
             />
             <Form.Control.Feedback type="invalid">
               Avatar can not be empty
